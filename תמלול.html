@@ -4,26 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>מערכת תמלול קולית חכמה מבוססת AI</title>
-    <!-- שימוש ב-Tailwind CSS לעיצוב מקצועי ומהיר -->
+    <!-- סמל כרטיסייה (Favicon) - אייקון מיקרופון חכם -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎙️</text></svg>">
+    <!-- שימוש ב-Tailwind CSS לעיצוב מקצועי -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- גופנים בעברית -->
     <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;800&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Heebo', sans-serif;
-            background-color: #f8fafc;
-        }
-        /* עיצוב פס גלילה מותאם */
+        body { font-family: 'Heebo', sans-serif; background-color: #f8fafc; }
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-        }
-        /* מניעת קפיצות בהסתרת שדה המייל */
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
         #emailContainer { display: none; }
+        /* עיצוב לאזור העריכה של התוצאות */
+        textarea.editable-result {
+            width: 100%;
+            min-height: 100px;
+            border: 1px solid transparent;
+            background-color: transparent;
+            resize: vertical;
+            transition: all 0.2s;
+        }
+        textarea.editable-result:hover, textarea.editable-result:focus {
+            border-color: #cbd5e1;
+            background-color: rgba(255, 255, 255, 0.5);
+            outline: none;
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col text-slate-800">
@@ -44,7 +53,7 @@
     <!-- Main Content -->
     <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        <!-- חלונית התמלול (צד שמאל/מרכז) -->
+        <!-- חלונית התמלול (צד שמאל) -->
         <section class="lg:col-span-7 flex flex-col">
             <div class="mb-6">
                 <h2 class="text-3xl font-extrabold text-slate-900">תמלול מהיר ומדויק</h2>
@@ -60,7 +69,6 @@
                     <button id="clearBtn" class="text-sm text-slate-500 hover:text-red-500 transition-colors">נקה חלונית</button>
                 </div>
                 <div id="resultsArea" class="p-6 flex-grow overflow-y-auto bg-slate-50 min-h-[400px]">
-                    <!-- מצב התחלתי ריק -->
                     <div id="emptyState" class="h-full flex flex-col items-center justify-center text-slate-400">
                         <svg class="w-16 h-16 mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11v9h-14v-9m14-8h-14m0 0a2 2 0 00-2 2v6m16-8a2 2 0 012 2v6m-9 4h.01"></path></svg>
                         <p class="text-lg">התמלולים יופיעו כאן מיד לאחר העיבוד...</p>
@@ -69,7 +77,7 @@
             </div>
         </section>
 
-        <!-- טופס ההעלאה (צד ימין/תפריט צד) -->
+        <!-- טופס ההעלאה (צד ימין) -->
         <aside class="lg:col-span-5">
             <div class="glass-panel rounded-2xl shadow-lg border border-slate-200 p-6 sm:p-8">
                 <h3 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
@@ -78,35 +86,42 @@
                 </h3>
                 
                 <form id="uploadForm" class="space-y-5">
-                    
                     <!-- מפתח API -->
                     <div>
                         <label for="apiKey" class="block text-sm font-semibold text-slate-700 mb-1">מפתח API (Google Cloud)</label>
-                        <input type="password" id="apiKey" required placeholder="AIzaSyA..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow text-left" dir="ltr">
+                        <input type="password" id="apiKey" required placeholder="AIzaSyA..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-left" dir="ltr">
                     </div>
 
                     <!-- בחירת מודל -->
                     <div>
                         <label for="modelSelect" class="block text-sm font-semibold text-slate-700 mb-1">מודל תמלול (AI Engine)</label>
-                        <select id="modelSelect" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow text-left" dir="ltr">
+                        <select id="modelSelect" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-left" dir="ltr">
                             <option value="gemini-2.5-flash">Gemini 2.5 Flash (מהיר ומומלץ)</option>
-                            <option value="gemini-3-flash-preview">Gemini 3 Flash Preview (מודל חדש)</option>
+                            <option value="gemini-3-flash-preview">Gemini 3 Flash Preview</option>
+                            <option value="gemini-2.5-pro">Gemini 2.5 Pro (איכותי וכבד)</option>
+                            <option value="gemini-3.1-pro-preview">Gemini 3.1 Pro Preview</option>
                         </select>
+                    </div>
+
+                    <!-- תיבת הנחיות (Prompt) -->
+                    <div>
+                        <label for="customPrompt" class="block text-sm font-semibold text-slate-700 mb-1">הנחיות מיוחדות (אופציונלי)</label>
+                        <textarea id="customPrompt" rows="2" placeholder="לדוגמה: תמלל בפורמט של שאלות ותשובות, שמור על מילות סלנג..." class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"></textarea>
                     </div>
 
                     <!-- סוג הפעולה -->
                     <div>
                         <label for="requestType" class="block text-sm font-semibold text-slate-700 mb-1">תוצר מבוקש</label>
-                        <select id="requestType" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow">
+                        <select id="requestType" required class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="1">תמלול לטקסט בלבד</option>
                             <option value="2">הפקת קריינות שמע (TTS) בלבד</option>
                             <option value="3">תמלול טקסט + הפקת קריינות שמע</option>
                         </select>
                     </div>
 
-                    <!-- מתג אימייל (מיקומים מוחלטים ליציבות RTL) -->
+                    <!-- מתג אימייל -->
                     <div class="pt-2">
-                        <label class="flex items-center cursor-pointer" id="toggleLabel">
+                        <label class="flex items-center cursor-pointer">
                             <input type="checkbox" id="sendEmailToggle" class="sr-only">
                             <div id="toggleBg" class="relative w-14 h-7 bg-slate-300 rounded-full transition-colors duration-300">
                                 <div id="toggleDot" class="absolute top-[4px] bg-white w-5 h-5 rounded-full shadow-md transition-all duration-300" style="right: 4px;"></div>
@@ -118,7 +133,7 @@
                     <!-- אימייל יעד -->
                     <div id="emailContainer" class="opacity-0 transition-opacity duration-300">
                         <label for="email" class="block text-sm font-semibold text-slate-700 mb-1">כתובת אימייל לקבלת תוצרים</label>
-                        <input type="email" id="email" placeholder="example@domain.com" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow text-left" dir="ltr">
+                        <input type="email" id="email" placeholder="example@domain.com" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-left" dir="ltr">
                     </div>
 
                     <!-- אזור בחירת קבצים -->
@@ -152,16 +167,16 @@
     </footer>
 
     <script>
-        // --- הגדרות השרת ---
+        // --- הכנס כאן את כתובת הגוגל סקריפט שלך (ה-URL של הפריסה) ---
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxvZsGgwkq3Qff8y4NRf9WNgwfsMA8PSG9AAL9vrQOjY_9cEh1UmOA8mv7t-jNXoOUk/exec";
 
-        // --- רכיבי DOM ---
         const form = document.getElementById('uploadForm');
         const sendEmailToggle = document.getElementById('sendEmailToggle');
         const toggleBg = document.getElementById('toggleBg');
         const toggleDot = document.getElementById('toggleDot');
         const emailContainer = document.getElementById('emailContainer');
         const emailInput = document.getElementById('email');
+        const customPromptInput = document.getElementById('customPrompt');
         const fileInput = document.getElementById('audioFiles');
         const fileNamesDisplay = document.getElementById('fileNames');
         const submitBtn = document.getElementById('submitBtn');
@@ -170,7 +185,6 @@
         const emptyState = document.getElementById('emptyState');
         const clearBtn = document.getElementById('clearBtn');
 
-        // --- ניהול הלחצן המתחלף ---
         function updateToggleVisuals(isChecked) {
             if (isChecked) {
                 toggleBg.classList.replace('bg-slate-300', 'bg-blue-600');
@@ -187,11 +201,8 @@
             }
         }
 
-        sendEmailToggle.addEventListener('change', (e) => {
-            updateToggleVisuals(e.target.checked);
-        });
+        sendEmailToggle.addEventListener('change', (e) => updateToggleVisuals(e.target.checked));
 
-        // עדכון שם הקבצים
         fileInput.addEventListener('change', (e) => {
             const files = e.target.files;
             if (files.length === 0) {
@@ -203,38 +214,54 @@
             }
         });
 
-        // ניקוי חלונית
         clearBtn.addEventListener('click', () => {
             resultsArea.innerHTML = '';
             resultsArea.appendChild(emptyState);
             emptyState.style.display = 'flex';
         });
 
-        // --- טעינת נתונים (LocalStorage) ---
+        // העתקה ללוח (Clipboard)
+        function copyToClipboard(buttonElement, textToCopy) {
+            // יצירת אלמנט זמני נסתר להעתקה
+            const tempTextArea = document.createElement("textarea");
+            tempTextArea.value = textToCopy;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand("copy");
+            document.body.removeChild(tempTextArea);
+
+            // שינוי הלחצן להצגת אישור (וי)
+            const originalHTML = buttonElement.innerHTML;
+            buttonElement.innerHTML = `<svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg><span class="text-green-600">הועתק!</span>`;
+            
+            setTimeout(() => {
+                buttonElement.innerHTML = originalHTML;
+            }, 2000);
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             const savedApiKey = localStorage.getItem('tts_apiKey');
             const savedModel = localStorage.getItem('tts_model');
             const savedType = localStorage.getItem('tts_requestType');
+            const savedPrompt = localStorage.getItem('tts_customPrompt');
             const savedSendEmail = localStorage.getItem('tts_sendEmail') === 'true';
             const savedEmail = localStorage.getItem('tts_email');
 
             if (savedApiKey) document.getElementById('apiKey').value = savedApiKey;
             if (savedModel) document.getElementById('modelSelect').value = savedModel;
             if (savedType) document.getElementById('requestType').value = savedType;
+            if (savedPrompt) customPromptInput.value = savedPrompt;
             if (savedEmail) emailInput.value = savedEmail;
             
             sendEmailToggle.checked = savedSendEmail;
             updateToggleVisuals(savedSendEmail);
         });
 
-        // הוספת תוצאה למסך
         function addResultToPanel(fileName, textResult, isError = false) {
-            if (emptyState.style.display !== 'none') {
-                emptyState.style.display = 'none';
-            }
+            if (emptyState.style.display !== 'none') emptyState.style.display = 'none';
 
             const card = document.createElement('div');
-            card.className = `p-5 rounded-xl mb-4 border shadow-sm transform transition-all duration-300 ${isError ? 'bg-red-50 border-red-200' : 'bg-white border-slate-200'}`;
+            card.className = `p-5 rounded-xl mb-4 border shadow-sm transform transition-all duration-300 ${isError ? 'bg-red-50 border-red-200' : 'bg-white border-slate-200'} group relative`;
             
             const titleColor = isError ? 'text-red-700' : 'text-blue-700';
             const icon = isError ? 
@@ -242,40 +269,70 @@
                 `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
 
             const displayContent = textResult ? textResult : (isError ? "אירעה שגיאה בעיבוד הקובץ." : "העיבוד הושלם (קובץ שמע נוצר).");
+            
+            // יצירת ID ייחודי לתיבת הטקסט כדי שנוכל לקשר אותה לכפתור ההעתקה
+            const uniqueId = 'result_' + Date.now() + Math.floor(Math.random() * 1000);
+
+            let contentHTML = '';
+            let copyButtonHTML = '';
+
+            if (!isError && textResult) {
+                // אזור טקסט הניתן לעריכה
+                contentHTML = `<textarea id="${uniqueId}" class="editable-result text-slate-700 font-medium text-sm md:text-base" dir="auto">${displayContent}</textarea>`;
+                
+                // כפתור העתקה
+                copyButtonHTML = `
+                <button type="button" onclick="copyToClipboard(this, document.getElementById('${uniqueId}').value)" class="absolute top-4 left-4 flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold py-1.5 px-3 rounded-md transition-colors border border-slate-200 opacity-0 group-hover:opacity-100 focus:opacity-100 z-10">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                    <span>העתק</span>
+                </button>`;
+            } else {
+                contentHTML = `<div class="text-slate-700 whitespace-pre-wrap leading-relaxed font-medium text-sm md:text-base" dir="auto">${displayContent}</div>`;
+            }
 
             card.innerHTML = `
-                <div class="flex items-center gap-2 mb-3 border-b pb-2 ${isError ? 'border-red-100' : 'border-slate-100'}">
+                ${copyButtonHTML}
+                <div class="flex items-center gap-2 mb-3 border-b pb-2 ${isError ? 'border-red-100' : 'border-slate-100'} pl-20">
                     <span class="${titleColor}">${icon}</span>
                     <h4 class="font-bold ${titleColor} truncate flex-grow" dir="ltr">${fileName}</h4>
                     <span class="text-xs text-slate-400">${new Date().toLocaleTimeString('he-IL')}</span>
                 </div>
-                <div class="text-slate-700 whitespace-pre-wrap leading-relaxed font-medium text-sm md:text-base">${displayContent}</div>
+                ${contentHTML}
             `;
-            
             resultsArea.prepend(card);
+
+            // התאמה אוטומטית של גובה תיבת הטקסט (Textarea)
+            if (!isError && textResult) {
+                const textarea = document.getElementById(uniqueId);
+                textarea.style.height = 'auto';
+                textarea.style.height = (textarea.scrollHeight + 10) + 'px';
+                // גם בעת הקלדה הגובה יתעדכן
+                textarea.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    this.style.height = (this.scrollHeight + 5) + 'px';
+                });
+            }
         }
 
-        // --- טיפול בשליחת הטופס ---
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const apiKey = document.getElementById('apiKey').value;
             const modelSelect = document.getElementById('modelSelect').value;
             const requestType = document.getElementById('requestType').value;
+            const customPromptValue = customPromptInput.value;
             const sendEmailChecked = sendEmailToggle.checked;
             const emailValue = emailInput.value;
             const files = fileInput.files;
 
             if (files.length === 0) return;
 
-            // שמירה בזיכרון מקומי
             localStorage.setItem('tts_apiKey', apiKey);
             localStorage.setItem('tts_model', modelSelect);
             localStorage.setItem('tts_requestType', requestType);
+            localStorage.setItem('tts_customPrompt', customPromptValue);
             localStorage.setItem('tts_sendEmail', sendEmailChecked);
-            if (sendEmailChecked) {
-                localStorage.setItem('tts_email', emailValue);
-            }
+            if (sendEmailChecked) localStorage.setItem('tts_email', emailValue);
 
             submitBtn.disabled = true;
             submitBtn.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> <span>מעבד נתונים...</span>`;
@@ -297,6 +354,7 @@
                         key: apiKey,
                         model: modelSelect,
                         type: requestType,
+                        customPrompt: customPromptValue,
                         sendEmail: sendEmailChecked,
                         mail: sendEmailChecked ? emailValue : "",
                         fileBase64: base64Content,
@@ -304,13 +362,12 @@
                         fileName: file.name
                     };
 
-                    // ---- חזרנו לצורת התקשורת הפשוטה ביותר והיציבה ----
+                    const formData = new URLSearchParams();
+                    formData.append('data', JSON.stringify(payload));
+
                     const response = await fetch(SCRIPT_URL, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'text/plain;charset=utf-8' 
-                        },
-                        body: JSON.stringify(payload)
+                        body: formData 
                     });
 
                     const result = await response.json();
@@ -327,7 +384,7 @@
                 } catch (error) {
                     console.error('Fetch error for ' + file.name + ':', error);
                     errorCount++;
-                    addResultToPanel(file.name, "שגיאת תקשורת עם השרת.", true);
+                    addResultToPanel(file.name, "שגיאת תקשורת עם השרת (ככל הנראה בעיה בפריסה של הסקריפט).", true);
                 }
             }
 
