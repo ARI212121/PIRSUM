@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>הגדרת שלוחה</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root { font-family: 'Inter', system-ui, sans-serif; }
+        body { margin: 0; padding: 0; background-color: white; }
+    </style>
+</head>
+<body class="p-6">
+
+    <div class="w-full">
+        <h1 class="text-xl font-bold text-blue-700 mb-1 text-center">
+            הגדרת חיבור למערכת
+        </h1>
+        <p class="text-gray-500 mb-6 text-center text-sm">
+            הזן את הנתונים להחלת ההגדרות ויצירת קובץ ה-TTS בשלוחה.
+        </p>
+
+        <form id="setupForm" class="space-y-4">
+            
+            <div class="bg-blue-50 p-3 rounded-lg border border-blue-100 space-y-3">
+                <p class="text-xs font-bold text-blue-800 mb-2">נתונים שזוהו אוטומטית מהמערכת:</p>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600">מזהה גיליון (Sheet ID)</label>
+                    <input type="text" id="sheetId" readonly value="<?= sheetId ?>" 
+                           class="mt-1 block w-full px-3 py-1.5 bg-gray-100 border border-gray-200 rounded text-gray-500 text-xs focus:outline-none cursor-not-allowed text-left font-mono" dir="ltr">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-600">מזהה סקריפט (Script ID)</label>
+                    <input type="text" id="scriptId" readonly value="<?= scriptId ?>" 
+                           class="mt-1 block w-full px-3 py-1.5 bg-gray-100 border border-gray-200 rounded text-gray-500 text-xs focus:outline-none cursor-not-allowed text-left font-mono" dir="ltr">
+                </div>
+            </div>
+
+            <div class="pt-2 grid grid-cols-2 gap-4">
+                <div>
+                    <label for="extensionNum" class="block text-sm font-medium text-gray-700">מספר שלוחה</label>
+                    <input type="text" id="extensionNum" required placeholder="לדוגמה: 1"
+                           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="systemToken" class="block text-sm font-medium text-gray-700">טוקן המערכת</label>
+                    <input type="password" id="systemToken" required placeholder="הזן טוקן קו"
+                           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+            </div>
+
+            <div>
+                <label for="apiKey" class="block text-sm font-medium text-gray-700">מפתח API</label>
+                <input type="password" id="apiKey" required placeholder="הזן מפתח API"
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <button type="submit" id="submitBtn"
+                    class="w-full flex justify-center py-3 px-4 rounded-lg shadow text-white bg-blue-600 hover:bg-blue-700 font-medium transition duration-200 disabled:opacity-50 mt-4">
+                עדכן שלוחה וצור קובץ TTS
+            </button>
+        </form>
+
+        <div id="statusBox" class="mt-4 p-4 rounded-lg hidden text-sm overflow-hidden"></div>
+        
+        <div id="loader" class="mt-4 text-center hidden">
+            <div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full" role="status"></div>
+            <p id="loaderText" class="text-blue-600 mt-2 font-medium">מתחיל תהליך...</p>
+        </div>
+        
+        <button id="closeBtn" onclick="google.script.host.close()" class="hidden w-full mt-4 py-3 px-4 shadow rounded-lg text-white bg-green-600 hover:bg-green-700 font-medium transition duration-200">
+            סיום וסגירת החלון
+        </button>
+    </div>
+
+    <script>
+        const API_BASE = "https://www.call2all.co.il/ym/api";
+
+        async function updateExtensionSettings(token, ext, apiKey, scriptId, sheetId) {
+            const path = ext.startsWith('ivr2:') ? ext : `ivr2:${ext}`;
+            
+            const params = new URLSearchParams({
+                token: token,
+                path: path,
+                type: 'api',
+                api_link: 'https://sochn.arish121548.workers.dev/',
+                api_add_0: `API=${apiKey}`,
+                api_add_1: `TOKEN=${token}`,
+                api_add_2: `SCRIPT=${scriptId}`, 
+                api_add_3: `SHEET_ID=${sheetId}`,
+                api_000: 'path,,record,/Transcription,,no',
+                api_wait_answer_music_on_hold: 'yes',
+                api_wait_answer_music_on_hold_different: 'ztomao',
+                api_phone_send: 'yes'
+            });
+
+            try {
+                const response = await fetch(`${API_BASE}/UpdateExtension?${params.toString()}`);
+                if (!response.ok) throw new Error(`שגיאת HTTP בעדכון השלוחה: ${response.status}`);
+                const data = await response.json();
+                if (data.responseStatus !== "OK") throw new Error(data.message || "שגיאת API בעת עדכון השלוחה");
+            } catch (error) {
+                throw new Error(`שלב 1 (עדכון שלוחה) נכשל:\n${error.message}`);
+            }
+        }
+
+        async function createAndUploadTtsFile(token, ext) {
+            const path = ext.startsWith('ivr2:') ? ext : `ivr2:${ext}`;
+            const ttsContent = "מה תרצה לעשות היום?";
+            
+            try {
+                const formData = new URLSearchParams();
+                formData.append('token', token);
+                formData.append('what', `${path}/000.tts`);
+                formData.append('contents', ttsContent);
+
+                const uploadResponse = await fetch(`${API_BASE}/UploadTextFile`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                    body: formData
+                });
+
+                if (!uploadResponse.ok) throw new Error(`השרת החזיר שגיאת HTTP: ${uploadResponse.status}`);
+                const uploadData = await uploadResponse.json();
+                if (uploadData.responseStatus !== "OK") throw new Error(uploadData.message || "שגיאת העלאה במערכת");
+            } catch (error) {
+                throw new Error(`שלב 2 (העלאת קובץ TTS) נכשל:\n${error.message}`);
+            }
+        }
+
+        document.getElementById('setupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const statusBox = document.getElementById('statusBox');
+            const loader = document.getElementById('loader');
+            const loaderText = document.getElementById('loaderText');
+            const closeBtn = document.getElementById('closeBtn');
+
+            const sheetId = document.getElementById('sheetId').value.trim();
+            const scriptId = document.getElementById('scriptId').value.trim();
+            const extNum = document.getElementById('extensionNum').value.trim();
+            const token = document.getElementById('systemToken').value.trim();
+            const apiKey = document.getElementById('apiKey').value.trim();
+
+            submitBtn.disabled = true;
+            statusBox.classList.add('hidden');
+            loader.classList.remove('hidden');
+            closeBtn.classList.add('hidden');
+
+            try {
+                loaderText.innerText = "מעדכן את הגדרות השלוחה ל-api...";
+                await updateExtensionSettings(token, extNum, apiKey, scriptId, sheetId);
+
+                loaderText.innerText = "יוצר ומעלה קובץ שמע לשלוחה...";
+                await createAndUploadTtsFile(token, extNum);
+
+                loader.classList.add('hidden');
+                submitBtn.classList.add('hidden');
+                closeBtn.classList.remove('hidden');
+
+                statusBox.classList.remove('hidden');
+                statusBox.className = "mt-4 p-4 rounded-lg bg-green-50 text-green-800 text-sm border border-green-200 shadow-sm";
+                statusBox.innerHTML = `
+                    <div class="flex items-center mb-2">
+                        <svg class="w-6 h-6 mr-2 text-green-600 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        <p class="font-bold text-lg">התהליך הושלם בהצלחה!</p>
+                    </div>
+                    <ul class="list-disc list-inside mt-2 text-gray-700">
+                        <li>הגדרות השלוחה (${extNum}) עודכנו במערכת.</li>
+                        <li>החיבור לגיליון ולסקריפט הוגדר בהצלחה.</li>
+                        <li>קובץ השמע הראשוני נוצר.</li>
+                    </ul>
+                `;
+
+            } catch (error) {
+                console.error(error);
+                loader.classList.add('hidden');
+                statusBox.classList.remove('hidden');
+                statusBox.className = "mt-4 p-4 rounded-lg bg-red-50 text-red-800 text-sm border border-red-200 shadow-sm";
+                statusBox.innerHTML = `
+                    <strong class="text-base text-red-700">שגיאה בתהליך:</strong>
+                    <pre class="mt-2 text-xs text-left bg-white p-2 rounded border border-red-100 overflow-x-auto text-gray-600" dir="ltr">${error.message}</pre>
+                `;
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
