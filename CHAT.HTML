@@ -3,118 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מערכת P2P מלאה: צ'אט, קבצים, וידאו ושמע</title>
+    <title>מערכת P2P מתקדמת - צ'אט, וידאו, שמע וקבצים</title>
     <style>
-        :root { --bg-color: #f0f2f5; --panel-bg: #ffffff; --primary-color: #00a884; --primary-hover: #008f6f; --text-color: #111b21; --border-color: #e9edef; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #dadbd3; color: var(--text-color); margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; height: 100vh; box-sizing: border-box; }
-        .container { width: 100%; max-width: 1200px; background: var(--panel-bg); border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,0.1); display: flex; height: 95vh; overflow: hidden; }
+        :root {
+            --bg-body: #e5ddd5;
+            --sidebar-bg: #ffffff;
+            --chat-bg: #efeae2;
+            --primary: #008069;
+            --primary-hover: #016b58;
+            --text-main: #111b21;
+            --text-muted: #667781;
+            --border: #e9edef;
+            --msg-me: #d9fdd3;
+            --msg-peer: #ffffff;
+            --sys-bg: #f0f2f5;
+        }
+
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-body); margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; height: 100vh; box-sizing: border-box; color: var(--text-main); background-image: radial-gradient(circle, #e5ddd5 10%, #d0c8c0 90%);}
+        .container { width: 100%; max-width: 1300px; background: var(--sidebar-bg); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: flex; height: 95vh; overflow: hidden; }
         
         /* סרגל צד */
-        .sidebar { width: 320px; border-left: 1px solid var(--border-color); background: #ffffff; display: flex; flex-direction: column; z-index: 10; }
-        .my-id-box { padding: 20px; background: #f0f2f5; border-bottom: 1px solid var(--border-color); text-align: center; }
-        .my-id-box h3 { margin: 5px 0 0 0; color: var(--primary-color); font-size: 1.7rem; letter-spacing: 1px; }
-        .connect-form { padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 10px; }
-        input[type="text"] { padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.95rem; }
-        button { background-color: var(--primary-color); color: white; border: none; font-weight: bold; cursor: pointer; padding: 10px; border-radius: 6px; transition: background 0.2s; }
-        button:hover { background-color: var(--primary-hover); }
-        button:disabled { background-color: #cccccc; cursor: not-allowed; }
-        .contacts-list { flex: 1; overflow-y: auto; padding: 15px; }
-        .contact-item { padding: 12px; border-radius: 6px; margin-bottom: 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; border: 1px solid var(--border-color); }
-        .contact-item:hover { background: #f0f2f5; }
+        .sidebar { width: 340px; border-left: 1px solid var(--border); display: flex; flex-direction: column; background: var(--sidebar-bg); z-index: 2; }
+        .sidebar-header { background: var(--sys-bg); padding: 20px; text-align: center; border-bottom: 1px solid var(--border); }
+        .sidebar-header h3 { margin: 5px 0 0; color: var(--primary); font-size: 1.8rem; }
+        .sidebar-header small { color: var(--text-muted); font-size: 0.85rem; }
+        .connect-box { padding: 20px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; background: #fff; }
+        input[type="text"] { padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; background: #f8f9fa; transition: border 0.3s; }
+        input[type="text"]:focus { outline: none; border-color: var(--primary); background: #fff; }
+        button { background-color: var(--primary); color: white; border: none; font-weight: 600; cursor: pointer; padding: 12px; border-radius: 8px; font-size: 0.95rem; transition: background 0.2s, transform 0.1s; }
+        button:hover:not(:disabled) { background-color: var(--primary-hover); }
+        button:active:not(:disabled) { transform: scale(0.98); }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; opacity: 0.7; }
         
-        /* אזור מרכזי: צ'אט ומדיה */
-        .main-area { flex: 1; display: flex; flex-direction: column; background: #efeae2; position: relative; }
-        
-        /* סרגל עליון עם כפתורי מדיה */
-        .chat-header { background: #f0f2f5; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
-        .header-title { font-weight: bold; font-size: 1.05rem; }
-        .media-buttons { display: flex; gap: 10px; }
-        .btn-icon { background: #fff; color: var(--primary-color); border: 1px solid var(--border-color); width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; }
-        .btn-icon:hover:not(:disabled) { background: #f0f2f5; color: var(--primary-hover); }
+        .contacts { flex: 1; overflow-y: auto; padding: 15px; }
+        .contacts h4 { margin: 0 0 15px 0; color: var(--text-muted); text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px;}
+        .contact-card { padding: 15px; border-radius: 10px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; border: 1px solid transparent; transition: all 0.2s; }
+        .contact-card:hover { background: #f0f2f5; border-color: var(--border); }
+        .del-btn { background: #ea0038; padding: 6px 10px; font-size: 0.75rem; border-radius: 6px; }
+        .del-btn:hover { background: #c2002f; }
 
-        /* אזור וידאו (מוסתר כברירת מחדל) */
-        .video-container { display: none; background: #000; height: 300px; position: relative; border-bottom: 1px solid var(--border-color); }
+        /* אזור מרכזי */
+        .main-area { flex: 1; display: flex; flex-direction: column; background: var(--chat-bg); position: relative; }
+        
+        /* הדר הצ'אט */
+        .chat-header { background: var(--sys-bg); padding: 12px 25px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); height: 50px; }
+        .chat-title { font-weight: bold; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;}
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #ccc; }
+        .status-dot.active { background: #25d366; box-shadow: 0 0 8px rgba(37,211,102,0.5);}
+        .media-bar { display: flex; gap: 12px; }
+        .icon-btn { background: #fff; color: var(--text-muted); border: none; width: 42px; height: 42px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.3rem; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: all 0.2s; }
+        .icon-btn:hover:not(:disabled) { background: #f0f2f5; color: var(--primary); transform: translateY(-2px); }
+
+        /* שכבת וידאו */
+        .video-layer { display: none; background: #111b21; height: 350px; position: relative; box-shadow: inset 0 -10px 20px rgba(0,0,0,0.2); }
         #remoteVideo { width: 100%; height: 100%; object-fit: cover; }
-        #localVideo { position: absolute; bottom: 10px; left: 10px; width: 120px; height: 90px; background: #333; border: 2px solid white; border-radius: 6px; object-fit: cover; }
-        .end-call-btn { position: absolute; top: 10px; right: 10px; background: #ea0038; color: white; padding: 5px 15px; border-radius: 20px; }
+        #localVideo { position: absolute; bottom: 15px; left: 15px; width: 140px; height: 100px; background: #000; border: 3px solid #fff; border-radius: 8px; object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .end-call-bar { position: absolute; top: 15px; right: 15px; display: flex; gap: 10px;}
+        .btn-end { background: #ea0038; border-radius: 30px; padding: 8px 20px; font-weight: bold; box-shadow: 0 4px 10px rgba(234,0,56,0.3); }
+        .btn-end:hover { background: #c2002f; }
 
-        /* חלונית הודעות */
-        #messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-        .msg { padding: 8px 12px; border-radius: 8px; max-width: 65%; word-wrap: break-word; box-shadow: 0 1px 1px rgba(0,0,0,0.08); font-size: 0.95rem; }
-        .msg.me { background-color: #d9fdd3; align-self: flex-start; border-top-right-radius: 0; }
-        .msg.peer { background-color: #ffffff; align-self: flex-end; border-top-left-radius: 0; }
-        .msg.sys { background-color: #e1f3ff; align-self: center; font-size: 0.85rem; color: #54656f; max-width: 90%; }
-        
-        /* התקדמות קבצים */
-        .file-progress-box { margin-top: 5px; background: #eee; border-radius: 4px; height: 6px; overflow: hidden; position: relative; }
-        .file-progress-bar { background: var(--primary-color); height: 100%; width: 0%; transition: width 0.1s; }
-        .file-link { color: #0056b3; text-decoration: none; font-weight: bold; }
+        /* אזור ההודעות */
+        #messages { flex: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .msg { padding: 10px 15px; border-radius: 12px; max-width: 60%; word-wrap: break-word; box-shadow: 0 1px 2px rgba(0,0,0,0.1); font-size: 0.95rem; line-height: 1.4; position: relative; }
+        .msg.me { background-color: var(--msg-me); align-self: flex-start; border-top-right-radius: 0; }
+        .msg.peer { background-color: var(--msg-peer); align-self: flex-end; border-top-left-radius: 0; }
+        .msg.sys { background-color: rgba(255,255,255,0.8); align-self: center; font-size: 0.85rem; color: var(--text-muted); border-radius: 20px; padding: 6px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+
+        /* עיצוב קבצים בתוך הודעה */
+        .file-box { border: 1px solid rgba(0,0,0,0.1); border-radius: 8px; padding: 12px; background: rgba(255,255,255,0.5); margin-top: 5px; }
+        .file-info { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-weight: 600; }
+        .file-icon { font-size: 1.5rem; }
+        .progress-wrapper { background: rgba(0,0,0,0.1); border-radius: 10px; height: 8px; overflow: hidden; position: relative; margin-bottom: 5px;}
+        .progress-bar { background: var(--primary); height: 100%; width: 0%; transition: width 0.2s ease-out; }
+        .action-btn { background: var(--primary); padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; margin-top: 5px; }
 
         /* שורת קלט תחתונה */
-        .input-area { padding: 10px 15px; background: #f0f2f5; display: flex; gap: 10px; align-items: center; border-top: 1px solid var(--border-color); }
-        .input-area input[type="text"] { flex: 1; border: none; }
-        .file-btn-wrapper { position: relative; overflow: hidden; display: inline-block; }
-        .file-btn-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; }
+        .input-bar { padding: 15px 20px; background: var(--sys-bg); display: flex; gap: 12px; align-items: center; }
+        .input-bar input[type="text"] { flex: 1; padding: 14px 20px; border: none; border-radius: 30px; font-size: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08); background: #fff;}
+        .file-wrapper { position: relative; overflow: hidden; display: inline-block; }
+        .file-wrapper input[type=file] { position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+        .btn-send { border-radius: 50%; width: 50px; height: 50px; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="sidebar">
-        <div class="my-id-box">
+        <div class="sidebar-header">
             <div>מספר הזיהוי הקבוע שלך:</div>
             <h3 id="lblMyID">מייצר...</h3>
-            <small style="color:#667781">מספר זה נשמר עבורך במטמון</small>
+            <small>המספר שמור במטמון ולא ישתנה</small>
         </div>
-        <div class="connect-form">
-            <input type="text" id="txtPeerID" placeholder="הכנס מספר זיהוי של החבר">
-            <input type="text" id="txtPeerName" placeholder="שם החבר (לשמירה באנשי קשר)">
-            <button id="btnConnect">התחל שיחה</button>
+        <div class="connect-box">
+            <input type="text" id="txtPeerID" placeholder="הכנס מספר זיהוי של חבר">
+            <input type="text" id="txtPeerName" placeholder="שם החבר (ישמר ברשימה)">
+            <button id="btnConnect">התחבר לחבר</button>
         </div>
-        <div class="contacts-list">
-            <h4>אנשי קשר</h4>
+        <div class="contacts">
+            <h4>אנשי קשר קבועים</h4>
             <div id="contactsContainer"></div>
         </div>
     </div>
 
     <div class="main-area">
         <div class="chat-header">
-            <div class="header-title" id="chatHeader">צ'אט מנותק</div>
-            <div class="media-buttons">
-                <button id="btnAudioCall" class="btn-icon" disabled title="שיחת שמע">📞</button>
-                <button id="btnVideoCall" class="btn-icon" disabled title="שיחת וידאו">📷</button>
+            <div class="chat-title">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="chatHeaderTxt">מנותק. אנא בחר איש קשר.</span>
+            </div>
+            <div class="media-bar">
+                <button id="btnAudioCall" class="icon-btn" disabled title="שיחת שמע">📞</button>
+                <button id="btnVideoCall" class="icon-btn" disabled title="שיחת וידאו">📹</button>
             </div>
         </div>
         
-        <div class="video-container" id="videoContainer">
+        <div class="video-layer" id="videoContainer">
             <video id="remoteVideo" autoplay playsinline></video>
             <video id="localVideo" autoplay playsinline muted></video>
-            <button class="end-call-btn" id="btnEndCall">נתק שיחה</button>
+            <div class="end-call-bar">
+                <button class="btn-end" id="btnEndCall">ניתוק שיחה</button>
+            </div>
         </div>
 
         <div id="messages">
-            <div class="msg sys" id="connectionStatus">ממתין להזנת מזהה או קריאה נכנסת...</div>
+            <div class="msg sys" id="sysMsg">ברוך הבא! המערכת מוכנה לפעולה.</div>
         </div>
         
-        <div class="input-area">
-            <div class="file-btn-wrapper">
-                <button class="btn-icon" id="btnAttach" disabled title="שלח קובץ">📎</button>
+        <div class="input-bar">
+            <div class="file-wrapper">
+                <button class="icon-btn" id="btnAttach" disabled title="שלח קובץ">📎</button>
                 <input type="file" id="fileInput" disabled>
             </div>
             <input type="text" id="msgInput" placeholder="הקלד הודעה..." disabled>
-            <button id="btnSend" disabled style="width: 70px;">שלח</button>
+            <button id="btnSend" class="btn-send" disabled>➤</button>
         </div>
     </div>
 </div>
 
 <script>
     // ===================================================
+    // !!! הקישור לשרת גוגל סקריפט שלך !!!
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzUzVoJa3IcQrPSikmbpTIPikIvj-FmoD5jxA9Tpw5GGfOKfzfI9VyPcTbHzwQDuAld/exec";
     // ===================================================
 
     // מזהה קבוע
-    let myID = localStorage.getItem('p2p_my_id');
-    if (!myID) { myID = Math.floor(10000 + Math.random() * 90000).toString(); localStorage.setItem('p2p_my_id', myID); }
+    let myID = localStorage.getItem('p2p_advanced_id');
+    if (!myID) { myID = Math.floor(10000 + Math.random() * 90000).toString(); localStorage.setItem('p2p_advanced_id', myID); }
     document.getElementById('lblMyID').innerText = myID;
 
     const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
@@ -122,20 +156,25 @@
     let dataChannel;
     let checkInterval;
     let currentHostID = null;
-    let contacts = JSON.parse(localStorage.getItem('p2p_contacts_gs') || '{}');
+    let contacts = JSON.parse(localStorage.getItem('p2p_contacts_adv') || '{}');
+    
+    // מצב מדיה
     let localStream = null;
+    let isCallActive = false;
 
-    // משתני העברת קבצים
-    const CHUNK_SIZE = 16384; // 16KB
-    let incomingFileInfo = null;
-    let incomingFileData = [];
+    // בקרת קבצים מוגברת
+    const CHUNK_SIZE = 65536; // 64KB לשליחה מהירה וחלקה
+    let fileWritableStream = null;
+    let fileHandle = null;
+    let useFileSystem = false;
+    let incomingFileBuffer = [];
     let receivedSize = 0;
-    let currentFileMsgId = null;
+    let activeFileId = null;
 
     if (window.Notification && Notification.permission !== "granted") Notification.requestPermission();
     renderContacts();
 
-    // לולאת חיבור ראשוני מול גוגל
+    // לולאת האזנה ראשונית - גוגל
     setInterval(async () => {
         if (pc) return; 
         try {
@@ -145,8 +184,8 @@
                 const payload = JSON.parse(safeAtob(result.data));
                 if (payload.type === 'offer') {
                     currentHostID = payload.fromID;
-                    document.getElementById('chatHeader').innerText = "בשיחה עם: " + (contacts[currentHostID] || currentHostID);
-                    appendMessage("מתחבר לחבר...", 'sys');
+                    updateHeader(contacts[currentHostID] || currentHostID);
+                    sysMsg("זוהתה קריאה נכנסת, מתחבר...");
                     initWebRTC(false, payload.offer, myID);
                 }
             }
@@ -158,18 +197,30 @@
         const peerName = document.getElementById('txtPeerName').value.trim() || peerID;
         if(!peerID) return;
         contacts[peerID] = peerName;
-        localStorage.setItem('p2p_contacts_gs', JSON.stringify(contacts));
+        localStorage.setItem('p2p_contacts_adv', JSON.stringify(contacts));
         renderContacts();
-        document.getElementById('chatHeader').innerText = "בשיחה עם: " + peerName;
-        appendMessage("יוצר חיבור מול גוגל...", 'sys');
+        updateHeader(peerName);
+        sysMsg("יוצר קישור מאובטח דרך הרשת...");
         initWebRTC(true, null, peerID);
     };
+
+    function updateHeader(name) {
+        document.getElementById('chatHeaderTxt').innerText = "שיחה עם: " + name;
+    }
+
+    function sysMsg(text) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'msg sys';
+        msgDiv.innerText = text;
+        document.getElementById('messages').appendChild(msgDiv);
+        scrollToBottom();
+    }
 
     function initWebRTC(isHost, incomingOffer, targetID) {
         pc = new RTCPeerConnection(configuration);
 
         if (isHost) {
-            dataChannel = pc.createDataChannel("chatAndFileChannel");
+            dataChannel = pc.createDataChannel("p2pData");
             setupDataChannel();
             pc.createOffer().then(offer => pc.setLocalDescription(offer));
         } else {
@@ -179,61 +230,61 @@
                 .then(answer => pc.setLocalDescription(answer));
         }
 
-        // טיפול בהוספת ערוצי וידאו (Stream) מהצד השני
+        // קבלת וידאו/שמע מהצד השני
         pc.ontrack = (event) => {
             document.getElementById('videoContainer').style.display = 'block';
             document.getElementById('remoteVideo').srcObject = event.streams[0];
         };
 
-        // Renegotiation: מופעל אוטומטית כשאחד הצדדים מדליק מצלמה ומוסיף Track
+        // Renegotiation להוספת מדיה בזמן אמת
         pc.onnegotiationneeded = async () => {
             try {
                 const offer = await pc.createOffer();
                 await pc.setLocalDescription(offer);
-                // שולחים את ההצעה הפנימית דרך ערוץ הנתונים (ולא דרך גוגל!)
                 dataChannel.send(JSON.stringify({ sys: true, type: 'signal', sdp: pc.localDescription }));
             } catch(e) { console.error(e); }
         };
 
         pc.onicecandidate = (event) => {
             if (event.candidate) {
-                // אם הערוץ כבר פתוח (אחרי החיבור הראשוני), נשלח מועמדים ישירות
                 if (dataChannel && dataChannel.readyState === 'open') {
                     dataChannel.send(JSON.stringify({ sys: true, type: 'signal', candidate: event.candidate }));
                 }
             } else {
-                // חיבור ראשוני דרך גוגל שיטס
                 if (dataChannel && dataChannel.readyState === 'open') return; 
                 setTimeout(async () => {
                     const localDataStr = JSON.stringify(pc.localDescription);
-                    if (isHost) {
-                        const payload = safeBtoa(JSON.stringify({ type: 'offer', offer: localDataStr, fromID: myID }));
-                        await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'upsert', id: targetID, data: payload }) });
-                        checkInterval = setInterval(async () => {
-                            const res = await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'select', id: myID }) });
-                            const result = await res.json();
-                            if (result.status === "success" && result.data) {
-                                const resData = JSON.parse(safeAtob(result.data));
-                                if (resData.type === 'answer' && pc.signalingState === "have-local-offer") {
-                                    pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(resData.answer)));
-                                    clearInterval(checkInterval);
+                    try {
+                        if (isHost) {
+                            const payload = safeBtoa(JSON.stringify({ type: 'offer', offer: localDataStr, fromID: myID }));
+                            await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'upsert', id: targetID, data: payload }) });
+                            checkInterval = setInterval(async () => {
+                                const res = await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'select', id: myID }) });
+                                const result = await res.json();
+                                if (result.status === "success" && result.data) {
+                                    const resData = JSON.parse(safeAtob(result.data));
+                                    if (resData.type === 'answer' && pc.signalingState === "have-local-offer") {
+                                        pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(resData.answer)));
+                                        clearInterval(checkInterval);
+                                    }
                                 }
-                            }
-                        }, 3000);
-                    } else {
-                        const payload = safeBtoa(JSON.stringify({ type: 'answer', answer: localDataStr }));
-                        await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'upsert', id: currentHostID, data: payload }) });
-                    }
+                            }, 3000);
+                        } else {
+                            const payload = safeBtoa(JSON.stringify({ type: 'answer', answer: localDataStr }));
+                            await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'upsert', id: currentHostID, data: payload }) });
+                        }
+                    } catch(e) { console.error(e); }
                 }, 1000);
             }
         };
     }
 
     function setupDataChannel() {
-        dataChannel.binaryType = 'arraybuffer'; // חובה בשביל קבצים
+        dataChannel.binaryType = 'arraybuffer';
         
         dataChannel.onopen = () => {
-            appendMessage("החיבור הישיר (P2P) פתוח ומאובטח!", 'sys');
+            document.getElementById('statusDot').classList.add('active');
+            sysMsg("החיבור הישיר (P2P) פעיל! הכל מאובטח מקצה לקצה.");
             document.getElementById('msgInput').disabled = false;
             document.getElementById('btnSend').disabled = false;
             document.getElementById('btnAudioCall').disabled = false;
@@ -246,26 +297,28 @@
         };
 
         dataChannel.onmessage = async (event) => {
-            // טיפול בקבלת חתיכת קובץ בינארית
+            // טיפול בקבצים биנאריים בזמן אמת וכתיבה ישירה לדיסק!
             if (event.data instanceof ArrayBuffer) {
-                incomingFileData.push(event.data);
                 receivedSize += event.data.byteLength;
-                updateFileProgress(currentFileMsgId, receivedSize, incomingFileInfo.size);
-                return;
-            }
-
-            // טיפול בהודעות טקסט ומערכת
-            const msg = JSON.parse(event.data);
-            
-            if (!msg.sys) {
-                appendMessage(msg.text, 'peer');
-                if (document.hidden && window.Notification && Notification.permission === "granted") {
-                    new Notification("הודעה חדשה", { body: msg.text });
+                updateProgress(activeFileId, receivedSize);
+                
+                if (useFileSystem && fileWritableStream) {
+                    await fileWritableStream.write(event.data);
+                } else {
+                    incomingFileBuffer.push(event.data);
                 }
                 return;
             }
 
-            // ניהול משא ומתן למדיה (In-Band Signaling)
+            const msg = JSON.parse(event.data);
+            
+            if (!msg.sys) {
+                appendChat(msg.text, 'peer');
+                notifyUser("הודעה חדשה", msg.text);
+                return;
+            }
+
+            // תקשורת מדיה ואיתות
             if (msg.type === 'signal') {
                 if (msg.sdp) {
                     await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
@@ -278,52 +331,64 @@
                     pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
                 }
             } 
-            // ניהול שיחות (בקשה ותשובה)
-            else if (msg.type === 'call-request') {
-                const isVideo = msg.media === 'video';
-                if (confirm(`שיחת ${isVideo ? 'וידאו' : 'שמע'} נכנסת. האם לאשר?`)) {
-                    dataChannel.send(JSON.stringify({ sys: true, type: 'call-accept', media: msg.media }));
+            else if (msg.type === 'call-req') {
+                const cType = msg.media === 'video' ? 'וידאו' : 'שמע';
+                if (confirm(`שיחת ${cType} נכנסת. לאשר?`)) {
+                    dataChannel.send(JSON.stringify({ sys: true, type: 'call-acc', media: msg.media }));
                     startMedia(msg.media);
                 } else {
-                    dataChannel.send(JSON.stringify({ sys: true, type: 'call-reject' }));
+                    dataChannel.send(JSON.stringify({ sys: true, type: 'call-rej' }));
                 }
-            } else if (msg.type === 'call-accept') {
-                appendMessage("החבר אישר את השיחה, מתחבר למדיה...", 'sys');
+            } 
+            else if (msg.type === 'call-acc') {
+                sysMsg("החבר אישר. מתחבר למדיה...");
                 startMedia(msg.media);
-            } else if (msg.type === 'call-reject') {
-                appendMessage("החבר דחה את השיחה.", 'sys');
-            } else if (msg.type === 'call-end') {
-                stopMedia();
-                appendMessage("החבר ניתק את השיחה.", 'sys');
+            } 
+            else if (msg.type === 'call-rej') { sysMsg("החבר דחה את השיחה."); } 
+            else if (msg.type === 'call-end') {
+                sysMsg("החבר ניתק את השיחה.");
+                stopMedia(false); // ניתוק בלי להודיע חזרה (מונע לולאה)
             }
-            // ניהול העברת קבצים
-            else if (msg.type === 'file-start') {
-                incomingFileInfo = msg;
-                incomingFileData = [];
-                receivedSize = 0;
-                currentFileMsgId = "file_" + Date.now();
-                appendFileMessage(currentFileMsgId, msg.name, msg.size, 'peer');
-            } else if (msg.type === 'file-end') {
-                const blob = new Blob(incomingFileData);
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = incomingFileInfo.name;
-                a.innerText = "💾 הורד קובץ";
-                a.className = "file-link";
-                document.getElementById('prog_' + currentFileMsgId).replaceWith(a);
+
+            // ניהול העברת קבצים מתוחכם
+            else if (msg.type === 'file-req') {
+                renderIncomingFileRequest(msg.id, msg.name, msg.size);
+                notifyUser("קובץ נכנס", `קובץ חדש: ${msg.name}`);
+            } 
+            else if (msg.type === 'file-acc') {
+                document.getElementById('fileStatus_' + msg.id).innerText = "שולח נתונים...";
+                startSendingFileChunks(msg.id);
+            } 
+            else if (msg.type === 'file-rej') {
+                document.getElementById('fileStatus_' + msg.id).innerText = "החבר דחה את הקובץ.";
             }
+            else if (msg.type === 'file-end') {
+                if (useFileSystem && fileWritableStream) {
+                    await fileWritableStream.close();
+                    document.getElementById('fileStatus_' + msg.id).innerHTML = `<span style="color:#00a884; font-weight:bold;">ההורדה לדיסק הסתיימה בהצלחה ✓</span>`;
+                } else {
+                    // יצירת קישור Fallback אם אין תמיכה ב-FileSystem API
+                    const blob = new Blob(incomingFileBuffer);
+                    const url = URL.createObjectURL(blob);
+                    document.getElementById('fileStatus_' + msg.id).innerHTML = `<a href="${url}" download="received_file" style="color:#008069; font-weight:bold; text-decoration:none;">הורד קובץ לראם ✓</a>`;
+                }
+            }
+        };
+
+        dataChannel.onclose = () => { 
+            document.getElementById('statusDot').classList.remove('active');
+            sysMsg("החיבור נסגר."); 
         };
     }
 
     // ==========================================
-    // שליחת הודעות טקסט
+    // טקסט וצ'אט
     // ==========================================
     function sendMessage() {
         const input = document.getElementById('msgInput');
-        if (input.value.trim() && dataChannel && dataChannel.readyState === 'open') {
+        if (input.value.trim() && dataChannel?.readyState === 'open') {
             dataChannel.send(JSON.stringify({ sys: false, text: input.value.trim() }));
-            appendMessage(input.value.trim(), 'me');
+            appendChat(input.value.trim(), 'me');
             input.value = '';
         }
     }
@@ -331,85 +396,149 @@
     document.getElementById('msgInput').onkeypress = (e) => { if(e.key === 'Enter') sendMessage(); };
 
     // ==========================================
-    // שליחת קבצים
+    // קבצים: צד שולח + בקרת זרימה חכמה
     // ==========================================
+    let sendingFileObj = null;
+
     document.getElementById('fileInput').onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        
+        sendingFileObj = e.target.files[0];
+        if (!sendingFileObj) return;
         const msgId = "file_" + Date.now();
-        appendFileMessage(msgId, file.name, file.size, 'me');
-        dataChannel.send(JSON.stringify({ sys: true, type: 'file-start', name: file.name, size: file.size }));
-        
+        renderOutgoingFile(msgId, sendingFileObj.name, sendingFileObj.size);
+        dataChannel.send(JSON.stringify({ sys: true, type: 'file-req', id: msgId, name: sendingFileObj.name, size: sendingFileObj.size }));
+        e.target.value = ''; // איפוס הבחירה
+    };
+
+    function startSendingFileChunks(msgId) {
+        if (!sendingFileObj) return;
+        const file = sendingFileObj;
         const reader = new FileReader();
         let offset = 0;
         
-        reader.onload = (e) => {
-            dataChannel.send(e.target.result); // שולח ArrayBuffer
-            offset += e.target.result.byteLength;
-            updateFileProgress(msgId, offset, file.size);
-            
+        // מגדיר סף שמירת זכרון לכרטיס הרשת
+        dataChannel.bufferedAmountLowThreshold = CHUNK_SIZE * 4; 
+
+        const readNext = () => {
             if (offset < file.size) {
-                readSlice(offset); // קורא את החתיכה הבאה
+                reader.readAsArrayBuffer(file.slice(offset, offset + CHUNK_SIZE));
             } else {
-                dataChannel.send(JSON.stringify({ sys: true, type: 'file-end' }));
-                document.getElementById('prog_' + msgId).innerText = "נשלח בהצלחה ✓";
+                dataChannel.send(JSON.stringify({ sys: true, type: 'file-end', id: msgId }));
+                document.getElementById('fileStatus_' + msgId).innerHTML = `<span style="color:#00a884; font-weight:bold;">נשלח בהצלחה ✓</span>`;
             }
         };
-        
-        const readSlice = o => {
-            const slice = file.slice(offset, o + CHUNK_SIZE);
-            reader.readAsArrayBuffer(slice);
+
+        reader.onload = (e) => {
+            dataChannel.send(e.target.result);
+            offset += e.target.result.byteLength;
+            updateProgress(msgId, offset);
+
+            // Flow Control: אם החוצץ של הרשת מלא, נחכה שהוא יתרוקן קצת לפני הקריאה הבאה!
+            if (dataChannel.bufferedAmount > dataChannel.bufferedAmountLowThreshold) {
+                dataChannel.onbufferedamountlow = () => {
+                    dataChannel.onbufferedamountlow = null;
+                    readNext();
+                };
+            } else {
+                readNext();
+            }
         };
-        readSlice(0); // מתחיל קריאה
-    };
+        readNext();
+    }
+
+    // ==========================================
+    // קבצים: צד מקבל (כתיבה ישירה לדיסק)
+    // ==========================================
+    function renderIncomingFileRequest(msgId, name, size) {
+        const sizeMb = (size / (1024*1024)).toFixed(2);
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `msg peer file-box`;
+        msgDiv.innerHTML = `
+            <div class="file-info"><span class="file-icon">📄</span> <div>${name}<br><small>${sizeMb} MB</small></div></div>
+            <div id="fileStatus_${msgId}">
+                <button class="action-btn" onclick="acceptIncomingFile('${msgId}', '${name}', ${size})">אשר והורד</button>
+                <button class="action-btn" style="background:#ea0038" onclick="rejectIncomingFile('${msgId}')">דחה</button>
+            </div>
+            <div class="progress-wrapper" style="display:none" id="progWrap_${msgId}"><div class="progress-bar" id="progBar_${msgId}"></div></div>
+        `;
+        document.getElementById('messages').appendChild(msgDiv);
+        scrollToBottom();
+    }
+
+    async function acceptIncomingFile(msgId, defaultName, totalSize) {
+        try {
+            // שימוש ב-API החדש כדי לקבל נתיב שמירה במחשב לפני תחילת הקבלה
+            if ('showSaveFilePicker' in window) {
+                fileHandle = await window.showSaveFilePicker({ suggestedName: defaultName });
+                fileWritableStream = await fileHandle.createWritable();
+                useFileSystem = true;
+            } else {
+                useFileSystem = false;
+                incomingFileBuffer = [];
+            }
+            activeFileId = msgId;
+            receivedSize = 0;
+            
+            document.getElementById('fileStatus_' + msgId).innerText = `מקבל קובץ...`;
+            document.getElementById('progWrap_' + msgId).style.display = 'block';
+            document.getElementById('progBar_' + msgId).setAttribute('data-total', totalSize);
+            
+            dataChannel.send(JSON.stringify({ sys: true, type: 'file-acc', id: msgId }));
+        } catch (err) {
+            // המשתמש סגר את חלון השמירה
+            rejectIncomingFile(msgId);
+        }
+    }
+
+    function rejectIncomingFile(msgId) {
+        document.getElementById('fileStatus_' + msgId).innerText = "דחית את הקובץ.";
+        dataChannel.send(JSON.stringify({ sys: true, type: 'file-rej', id: msgId }));
+    }
 
     // ==========================================
     // שיחות וידאו ושמע
     // ==========================================
-    document.getElementById('btnVideoCall').onclick = () => initiateCall('video');
-    document.getElementById('btnAudioCall').onclick = () => initiateCall('audio');
+    document.getElementById('btnVideoCall').onclick = () => { dataChannel.send(JSON.stringify({ sys: true, type: 'call-req', media: 'video' })); sysMsg("מצלצל..."); };
+    document.getElementById('btnAudioCall').onclick = () => { dataChannel.send(JSON.stringify({ sys: true, type: 'call-req', media: 'audio' })); sysMsg("מצלצל..."); };
     
-    function initiateCall(type) {
-        appendMessage("ממתין לאישור החבר...", 'sys');
-        dataChannel.send(JSON.stringify({ sys: true, type: 'call-request', media: type }));
-    }
-
     async function startMedia(type) {
         try {
-            const constraints = { audio: true, video: type === 'video' };
+            const constraints = { audio: true, video: type === 'video' ? { facingMode: "user" } : false };
             localStream = await navigator.mediaDevices.getUserMedia(constraints);
             
+            isCallActive = true;
             if (type === 'video') {
                 document.getElementById('videoContainer').style.display = 'block';
                 document.getElementById('localVideo').srcObject = localStream;
             }
-            
-            // הוספת הערוצים לחיבור (יפעיל אוטומטית את onnegotiationneeded)
-            localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+            localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
         } catch (err) {
-            alert("שגיאה בגישה למצלמה/מיקרופון. ודא שהדף מאובטח (HTTPS).");
+            alert(`שגיאת הרשאה למצלמה/מיקרופון: ${err.message}.\n\nודא שהדפדפן מאפשר גישה ושאתה גולש בחיבור מאובטח (HTTPS).`);
+            stopMedia(true);
         }
     }
 
-    document.getElementById('btnEndCall').onclick = stopMedia;
+    document.getElementById('btnEndCall').onclick = () => stopMedia(true);
 
-    function stopMedia() {
+    function stopMedia(notifyPeer) {
+        if (!isCallActive) return; 
+        isCallActive = false;
+        
         if (localStream) {
-            localStream.getTracks().forEach(track => { track.stop(); pc.removeTrack(pc.getSenders().find(s => s.track === track)); });
+            localStream.getTracks().forEach(t => { t.stop(); pc.removeTrack(pc.getSenders().find(s => s.track === t)); });
             localStream = null;
         }
         document.getElementById('videoContainer').style.display = 'none';
-        if (dataChannel && dataChannel.readyState === 'open') {
+        
+        if (notifyPeer && dataChannel?.readyState === 'open') {
             dataChannel.send(JSON.stringify({ sys: true, type: 'call-end' }));
+            sysMsg("ניתקת את השיחה.");
         }
-        appendMessage("השיחה הסתיימה.", 'sys');
     }
 
     // ==========================================
-    // עזרים ל-UI (תצוגת הודעות וקבצים)
+    // UI כללי
     // ==========================================
-    function appendMessage(text, side) {
+    function appendChat(text, side) {
         const msgDiv = document.createElement('div');
         msgDiv.className = `msg ${side}`;
         msgDiv.innerText = text;
@@ -417,49 +546,50 @@
         scrollToBottom();
     }
 
-    function appendFileMessage(id, name, size, side) {
+    function renderOutgoingFile(msgId, name, size) {
         const sizeMb = (size / (1024*1024)).toFixed(2);
         const msgDiv = document.createElement('div');
-        msgDiv.className = `msg ${side}`;
-        msgDiv.innerHTML = `📄 <b>${name}</b> (${sizeMb} MB)<br>
-            <div class="file-progress-box" id="progBox_${id}">
-                <div class="file-progress-bar" id="progBar_${id}"></div>
-            </div>
-            <span style="font-size:0.8rem" id="prog_${id}">מתחיל העברה...</span>`;
+        msgDiv.className = `msg me file-box`;
+        msgDiv.innerHTML = `
+            <div class="file-info"><span class="file-icon">📁</span> <div>${name}<br><small>${sizeMb} MB</small></div></div>
+            <div id="fileStatus_${msgId}" style="font-size:0.85rem; color:var(--primary);">ממתין לאישור החבר...</div>
+            <div class="progress-wrapper"><div class="progress-bar" id="progBar_${msgId}" data-total="${size}"></div></div>
+        `;
         document.getElementById('messages').appendChild(msgDiv);
         scrollToBottom();
     }
 
-    function updateFileProgress(id, current, total) {
-        const percent = Math.round((current / total) * 100);
+    function updateProgress(id, current) {
         const bar = document.getElementById('progBar_' + id);
-        const txt = document.getElementById('prog_' + id);
-        if(bar) bar.style.width = percent + '%';
-        if(txt) txt.innerText = percent + '%';
+        if (bar) {
+            const total = parseInt(bar.getAttribute('data-total'));
+            const percent = Math.min(Math.round((current / total) * 100), 100);
+            bar.style.width = percent + '%';
+        }
     }
 
-    function scrollToBottom() {
-        const box = document.getElementById('messages');
-        box.scrollTop = box.scrollHeight;
-    }
+    function scrollToBottom() { const b = document.getElementById('messages'); b.scrollTop = b.scrollHeight; }
 
     function renderContacts() {
         const container = document.getElementById('contactsContainer');
         container.innerHTML = '';
         for (let id in contacts) {
-            const item = document.createElement('div');
-            item.className = 'contact-item';
-            item.innerHTML = `<div><b>${contacts[id]}</b><br><span>ID: ${id}</span></div> <button class="end-call-btn" style="position:static" onclick="deleteContact('${id}', event)">מחק</button>`;
-            item.onclick = () => { document.getElementById('txtPeerID').value = id; document.getElementById('txtPeerName').value = contacts[id]; };
-            container.appendChild(item);
+            const el = document.createElement('div');
+            el.className = 'contact-card';
+            el.innerHTML = `<div><b>${contacts[id]}</b><br><small>ID: ${id}</small></div> <button class="del-btn" onclick="delContact('${id}', event)">מחק</button>`;
+            el.onclick = () => { document.getElementById('txtPeerID').value = id; document.getElementById('txtPeerName').value = contacts[id]; };
+            container.appendChild(el);
         }
     }
 
-    window.deleteContact = function(id, event) {
-        event.stopPropagation();
-        delete contacts[id];
-        localStorage.setItem('p2p_contacts_gs', JSON.stringify(contacts));
+    window.delContact = function(id, e) {
+        e.stopPropagation(); delete contacts[id];
+        localStorage.setItem('p2p_contacts_adv', JSON.stringify(contacts));
         renderContacts();
+    }
+
+    function notifyUser(title, body) {
+        if (document.hidden && window.Notification?.permission === "granted") new Notification(title, { body: body });
     }
 
     function safeBtoa(str) { return btoa(unescape(encodeURIComponent(str))); }
