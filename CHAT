@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מערכת P2P מלאה: צ'אט, קבצים, וידאו ושמע</title>
+    <style>
+        :root { --bg-color: #f0f2f5; --panel-bg: #ffffff; --primary-color: #00a884; --primary-hover: #008f6f; --text-color: #111b21; --border-color: #e9edef; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #dadbd3; color: var(--text-color); margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; height: 100vh; box-sizing: border-box; }
+        .container { width: 100%; max-width: 1200px; background: var(--panel-bg); border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,0.1); display: flex; height: 95vh; overflow: hidden; }
+        
+        /* סרגל צד */
+        .sidebar { width: 320px; border-left: 1px solid var(--border-color); background: #ffffff; display: flex; flex-direction: column; z-index: 10; }
+        .my-id-box { padding: 20px; background: #f0f2f5; border-bottom: 1px solid var(--border-color); text-align: center; }
+        .my-id-box h3 { margin: 5px 0 0 0; color: var(--primary-color); font-size: 1.7rem; letter-spacing: 1px; }
+        .connect-form { padding: 15px; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 10px; }
+        input[type="text"] { padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.95rem; }
+        button { background-color: var(--primary-color); color: white; border: none; font-weight: bold; cursor: pointer; padding: 10px; border-radius: 6px; transition: background 0.2s; }
+        button:hover { background-color: var(--primary-hover); }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        .contacts-list { flex: 1; overflow-y: auto; padding: 15px; }
+        .contact-item { padding: 12px; border-radius: 6px; margin-bottom: 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; border: 1px solid var(--border-color); }
+        .contact-item:hover { background: #f0f2f5; }
+        
+        /* אזור מרכזי: צ'אט ומדיה */
+        .main-area { flex: 1; display: flex; flex-direction: column; background: #efeae2; position: relative; }
+        
+        /* סרגל עליון עם כפתורי מדיה */
+        .chat-header { background: #f0f2f5; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+        .header-title { font-weight: bold; font-size: 1.05rem; }
+        .media-buttons { display: flex; gap: 10px; }
+        .btn-icon { background: #fff; color: var(--primary-color); border: 1px solid var(--border-color); width: 40px; height: 40px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; }
+        .btn-icon:hover:not(:disabled) { background: #f0f2f5; color: var(--primary-hover); }
+
+        /* אזור וידאו (מוסתר כברירת מחדל) */
+        .video-container { display: none; background: #000; height: 300px; position: relative; border-bottom: 1px solid var(--border-color); }
+        #remoteVideo { width: 100%; height: 100%; object-fit: cover; }
+        #localVideo { position: absolute; bottom: 10px; left: 10px; width: 120px; height: 90px; background: #333; border: 2px solid white; border-radius: 6px; object-fit: cover; }
+        .end-call-btn { position: absolute; top: 10px; right: 10px; background: #ea0038; color: white; padding: 5px 15px; border-radius: 20px; }
+
+        /* חלונית הודעות */
+        #messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        .msg { padding: 8px 12px; border-radius: 8px; max-width: 65%; word-wrap: break-word; box-shadow: 0 1px 1px rgba(0,0,0,0.08); font-size: 0.95rem; }
+        .msg.me { background-color: #d9fdd3; align-self: flex-start; border-top-right-radius: 0; }
+        .msg.peer { background-color: #ffffff; align-self: flex-end; border-top-left-radius: 0; }
+        .msg.sys { background-color: #e1f3ff; align-self: center; font-size: 0.85rem; color: #54656f; max-width: 90%; }
+        
+        /* התקדמות קבצים */
+        .file-progress-box { margin-top: 5px; background: #eee; border-radius: 4px; height: 6px; overflow: hidden; position: relative; }
+        .file-progress-bar { background: var(--primary-color); height: 100%; width: 0%; transition: width 0.1s; }
+        .file-link { color: #0056b3; text-decoration: none; font-weight: bold; }
+
+        /* שורת קלט תחתונה */
+        .input-area { padding: 10px 15px; background: #f0f2f5; display: flex; gap: 10px; align-items: center; border-top: 1px solid var(--border-color); }
+        .input-area input[type="text"] { flex: 1; border: none; }
+        .file-btn-wrapper { position: relative; overflow: hidden; display: inline-block; }
+        .file-btn-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="sidebar">
+        <div class="my-id-box">
+            <div>מספר הזיהוי הקבוע שלך:</div>
+            <h3 id="lblMyID">מייצר...</h3>
+            <small style="color:#667781">מספר זה נשמר עבורך במטמון</small>
+        </div>
+        <div class="connect-form">
+            <input type="text" id="txtPeerID" placeholder="הכנס מספר זיהוי של החבר">
+            <input type="text" id="txtPeerName" placeholder="שם החבר (לשמירה באנשי קשר)">
+            <button id="btnConnect">התחל שיחה</button>
+        </div>
+        <div class="contacts-list">
+            <h4>אנשי קשר</h4>
+            <div id="contactsContainer"></div>
+        </div>
+    </div>
+
+    <div class="main-area">
+        <div class="chat-header">
+            <div class="header-title" id="chatHeader">צ'אט מנותק</div>
+            <div class="media-buttons">
+                <button id="btnAudioCall" class="btn-icon" disabled title="שיחת שמע">📞</button>
+                <button id="btnVideoCall" class="btn-icon" disabled title="שיחת וידאו">📷</button>
+            </div>
+        </div>
+        
+        <div class="video-container" id="videoContainer">
+            <video id="remoteVideo" autoplay playsinline></video>
+            <video id="localVideo" autoplay playsinline muted></video>
+            <button class="end-call-btn" id="btnEndCall">נתק שיחה</button>
+        </div>
+
+        <div id="messages">
+            <div class="msg sys" id="connectionStatus">ממתין להזנת מזהה או קריאה נכנסת...</div>
+        </div>
+        
+        <div class="input-area">
+            <div class="file-btn-wrapper">
+                <button class="btn-icon" id="btnAttach" disabled title="שלח קובץ">📎</button>
+                <input type="file" id="fileInput" disabled>
+            </div>
+            <input type="text" id="msgInput" placeholder="הקלד הודעה..." disabled>
+            <button id="btnSend" disabled style="width: 70px;">שלח</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ===================================================
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzUzVoJa3IcQrPSikmbpTIPikIvj-FmoD5jxA9Tpw5GGfOKfzfI9VyPcTbHzwQDuAld/exec";
+    // ===================================================
+
+    // מזהה קבוע
+    let myID = localStorage.getItem('p2p_my_id');
+    if (!myID) { myID = Math.floor(10000 + Math.random() * 90000).toString(); localStorage.setItem('p2p_my_id', myID); }
+    document.getElementById('lblMyID').innerText = myID;
+
+    const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+    let pc;
+    let dataChannel;
+    let checkInterval;
+    let currentHostID = null;
+    let contacts = JSON.parse(localStorage.getItem('p2p_contacts_gs') || '{}');
+    let localStream = null;
+
+    // משתני העברת קבצים
+    const CHUNK_SIZE = 16384; // 16KB
+    let incomingFileInfo = null;
+    let incomingFileData = [];
+    let receivedSize = 0;
+    let currentFileMsgId = null;
+
+    if (window.Notification && Notification.permission !== "granted") Notification.requestPermission();
+    renderContacts();
+
+    // לולאת חיבור ראשוני מול גוגל
+    setInterval(async () => {
+        if (pc) return; 
+        try {
+            const res = await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'select', id: myID }) });
+            const result = await res.json();
+            if (result.status === "success" && result.data) {
+                const payload = JSON.parse(safeAtob(result.data));
+                if (payload.type === 'offer') {
+                    currentHostID = payload.fromID;
+                    document.getElementById('chatHeader').innerText = "בשיחה עם: " + (contacts[currentHostID] || currentHostID);
+                    appendMessage("מתחבר לחבר...", 'sys');
+                    initWebRTC(false, payload.offer, myID);
+                }
+            }
+        } catch (e) {}
+    }, 4000);
+
+    document.getElementById('btnConnect').onclick = () => {
+        const peerID = document.getElementById('txtPeerID').value.trim();
+        const peerName = document.getElementById('txtPeerName').value.trim() || peerID;
+        if(!peerID) return;
+        contacts[peerID] = peerName;
+        localStorage.setItem('p2p_contacts_gs', JSON.stringify(contacts));
+        renderContacts();
+        document.getElementById('chatHeader').innerText = "בשיחה עם: " + peerName;
+        appendMessage("יוצר חיבור מול גוגל...", 'sys');
+        initWebRTC(true, null, peerID);
+    };
+
+    function initWebRTC(isHost, incomingOffer, targetID) {
+        pc = new RTCPeerConnection(configuration);
+
+        if (isHost) {
+            dataChannel = pc.createDataChannel("chatAndFileChannel");
+            setupDataChannel();
+            pc.createOffer().then(offer => pc.setLocalDescription(offer));
+        } else {
+            pc.ondatachannel = (event) => { dataChannel = event.channel; setupDataChannel(); };
+            pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(incomingOffer)))
+                .then(() => pc.createAnswer())
+                .then(answer => pc.setLocalDescription(answer));
+        }
+
+        // טיפול בהוספת ערוצי וידאו (Stream) מהצד השני
+        pc.ontrack = (event) => {
+            document.getElementById('videoContainer').style.display = 'block';
+            document.getElementById('remoteVideo').srcObject = event.streams[0];
+        };
+
+        // Renegotiation: מופעל אוטומטית כשאחד הצדדים מדליק מצלמה ומוסיף Track
+        pc.onnegotiationneeded = async () => {
+            try {
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                // שולחים את ההצעה הפנימית דרך ערוץ הנתונים (ולא דרך גוגל!)
+                dataChannel.send(JSON.stringify({ sys: true, type: 'signal', sdp: pc.localDescription }));
+            } catch(e) { console.error(e); }
+        };
+
+        pc.onicecandidate = (event) => {
+            if (event.candidate) {
+                // אם הערוץ כבר פתוח (אחרי החיבור הראשוני), נשלח מועמדים ישירות
+                if (dataChannel && dataChannel.readyState === 'open') {
+                    dataChannel.send(JSON.stringify({ sys: true, type: 'signal', candidate: event.candidate }));
+                }
+            } else {
+                // חיבור ראשוני דרך גוגל שיטס
+                if (dataChannel && dataChannel.readyState === 'open') return; 
+                setTimeout(async () => {
+                    const localDataStr = JSON.stringify(pc.localDescription);
+                    if (isHost) {
+                        const payload = safeBtoa(JSON.stringify({ type: 'offer', offer: localDataStr, fromID: myID }));
+                        await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'upsert', id: targetID, data: payload }) });
+                        checkInterval = setInterval(async () => {
+                            const res = await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'select', id: myID }) });
+                            const result = await res.json();
+                            if (result.status === "success" && result.data) {
+                                const resData = JSON.parse(safeAtob(result.data));
+                                if (resData.type === 'answer' && pc.signalingState === "have-local-offer") {
+                                    pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(resData.answer)));
+                                    clearInterval(checkInterval);
+                                }
+                            }
+                        }, 3000);
+                    } else {
+                        const payload = safeBtoa(JSON.stringify({ type: 'answer', answer: localDataStr }));
+                        await fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'upsert', id: currentHostID, data: payload }) });
+                    }
+                }, 1000);
+            }
+        };
+    }
+
+    function setupDataChannel() {
+        dataChannel.binaryType = 'arraybuffer'; // חובה בשביל קבצים
+        
+        dataChannel.onopen = () => {
+            appendMessage("החיבור הישיר (P2P) פתוח ומאובטח!", 'sys');
+            document.getElementById('msgInput').disabled = false;
+            document.getElementById('btnSend').disabled = false;
+            document.getElementById('btnAudioCall').disabled = false;
+            document.getElementById('btnVideoCall').disabled = false;
+            document.getElementById('btnAttach').disabled = false;
+            document.getElementById('fileInput').disabled = false;
+            if(checkInterval) clearInterval(checkInterval);
+            fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'delete', id: myID }) });
+            if(currentHostID) fetch(GOOGLE_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'delete', id: currentHostID }) });
+        };
+
+        dataChannel.onmessage = async (event) => {
+            // טיפול בקבלת חתיכת קובץ בינארית
+            if (event.data instanceof ArrayBuffer) {
+                incomingFileData.push(event.data);
+                receivedSize += event.data.byteLength;
+                updateFileProgress(currentFileMsgId, receivedSize, incomingFileInfo.size);
+                return;
+            }
+
+            // טיפול בהודעות טקסט ומערכת
+            const msg = JSON.parse(event.data);
+            
+            if (!msg.sys) {
+                appendMessage(msg.text, 'peer');
+                if (document.hidden && window.Notification && Notification.permission === "granted") {
+                    new Notification("הודעה חדשה", { body: msg.text });
+                }
+                return;
+            }
+
+            // ניהול משא ומתן למדיה (In-Band Signaling)
+            if (msg.type === 'signal') {
+                if (msg.sdp) {
+                    await pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
+                    if (msg.sdp.type === 'offer') {
+                        const answer = await pc.createAnswer();
+                        await pc.setLocalDescription(answer);
+                        dataChannel.send(JSON.stringify({ sys: true, type: 'signal', sdp: pc.localDescription }));
+                    }
+                } else if (msg.candidate) {
+                    pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
+                }
+            } 
+            // ניהול שיחות (בקשה ותשובה)
+            else if (msg.type === 'call-request') {
+                const isVideo = msg.media === 'video';
+                if (confirm(`שיחת ${isVideo ? 'וידאו' : 'שמע'} נכנסת. האם לאשר?`)) {
+                    dataChannel.send(JSON.stringify({ sys: true, type: 'call-accept', media: msg.media }));
+                    startMedia(msg.media);
+                } else {
+                    dataChannel.send(JSON.stringify({ sys: true, type: 'call-reject' }));
+                }
+            } else if (msg.type === 'call-accept') {
+                appendMessage("החבר אישר את השיחה, מתחבר למדיה...", 'sys');
+                startMedia(msg.media);
+            } else if (msg.type === 'call-reject') {
+                appendMessage("החבר דחה את השיחה.", 'sys');
+            } else if (msg.type === 'call-end') {
+                stopMedia();
+                appendMessage("החבר ניתק את השיחה.", 'sys');
+            }
+            // ניהול העברת קבצים
+            else if (msg.type === 'file-start') {
+                incomingFileInfo = msg;
+                incomingFileData = [];
+                receivedSize = 0;
+                currentFileMsgId = "file_" + Date.now();
+                appendFileMessage(currentFileMsgId, msg.name, msg.size, 'peer');
+            } else if (msg.type === 'file-end') {
+                const blob = new Blob(incomingFileData);
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = incomingFileInfo.name;
+                a.innerText = "💾 הורד קובץ";
+                a.className = "file-link";
+                document.getElementById('prog_' + currentFileMsgId).replaceWith(a);
+            }
+        };
+    }
+
+    // ==========================================
+    // שליחת הודעות טקסט
+    // ==========================================
+    function sendMessage() {
+        const input = document.getElementById('msgInput');
+        if (input.value.trim() && dataChannel && dataChannel.readyState === 'open') {
+            dataChannel.send(JSON.stringify({ sys: false, text: input.value.trim() }));
+            appendMessage(input.value.trim(), 'me');
+            input.value = '';
+        }
+    }
+    document.getElementById('btnSend').onclick = sendMessage;
+    document.getElementById('msgInput').onkeypress = (e) => { if(e.key === 'Enter') sendMessage(); };
+
+    // ==========================================
+    // שליחת קבצים
+    // ==========================================
+    document.getElementById('fileInput').onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const msgId = "file_" + Date.now();
+        appendFileMessage(msgId, file.name, file.size, 'me');
+        dataChannel.send(JSON.stringify({ sys: true, type: 'file-start', name: file.name, size: file.size }));
+        
+        const reader = new FileReader();
+        let offset = 0;
+        
+        reader.onload = (e) => {
+            dataChannel.send(e.target.result); // שולח ArrayBuffer
+            offset += e.target.result.byteLength;
+            updateFileProgress(msgId, offset, file.size);
+            
+            if (offset < file.size) {
+                readSlice(offset); // קורא את החתיכה הבאה
+            } else {
+                dataChannel.send(JSON.stringify({ sys: true, type: 'file-end' }));
+                document.getElementById('prog_' + msgId).innerText = "נשלח בהצלחה ✓";
+            }
+        };
+        
+        const readSlice = o => {
+            const slice = file.slice(offset, o + CHUNK_SIZE);
+            reader.readAsArrayBuffer(slice);
+        };
+        readSlice(0); // מתחיל קריאה
+    };
+
+    // ==========================================
+    // שיחות וידאו ושמע
+    // ==========================================
+    document.getElementById('btnVideoCall').onclick = () => initiateCall('video');
+    document.getElementById('btnAudioCall').onclick = () => initiateCall('audio');
+    
+    function initiateCall(type) {
+        appendMessage("ממתין לאישור החבר...", 'sys');
+        dataChannel.send(JSON.stringify({ sys: true, type: 'call-request', media: type }));
+    }
+
+    async function startMedia(type) {
+        try {
+            const constraints = { audio: true, video: type === 'video' };
+            localStream = await navigator.mediaDevices.getUserMedia(constraints);
+            
+            if (type === 'video') {
+                document.getElementById('videoContainer').style.display = 'block';
+                document.getElementById('localVideo').srcObject = localStream;
+            }
+            
+            // הוספת הערוצים לחיבור (יפעיל אוטומטית את onnegotiationneeded)
+            localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+        } catch (err) {
+            alert("שגיאה בגישה למצלמה/מיקרופון. ודא שהדף מאובטח (HTTPS).");
+        }
+    }
+
+    document.getElementById('btnEndCall').onclick = stopMedia;
+
+    function stopMedia() {
+        if (localStream) {
+            localStream.getTracks().forEach(track => { track.stop(); pc.removeTrack(pc.getSenders().find(s => s.track === track)); });
+            localStream = null;
+        }
+        document.getElementById('videoContainer').style.display = 'none';
+        if (dataChannel && dataChannel.readyState === 'open') {
+            dataChannel.send(JSON.stringify({ sys: true, type: 'call-end' }));
+        }
+        appendMessage("השיחה הסתיימה.", 'sys');
+    }
+
+    // ==========================================
+    // עזרים ל-UI (תצוגת הודעות וקבצים)
+    // ==========================================
+    function appendMessage(text, side) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `msg ${side}`;
+        msgDiv.innerText = text;
+        document.getElementById('messages').appendChild(msgDiv);
+        scrollToBottom();
+    }
+
+    function appendFileMessage(id, name, size, side) {
+        const sizeMb = (size / (1024*1024)).toFixed(2);
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `msg ${side}`;
+        msgDiv.innerHTML = `📄 <b>${name}</b> (${sizeMb} MB)<br>
+            <div class="file-progress-box" id="progBox_${id}">
+                <div class="file-progress-bar" id="progBar_${id}"></div>
+            </div>
+            <span style="font-size:0.8rem" id="prog_${id}">מתחיל העברה...</span>`;
+        document.getElementById('messages').appendChild(msgDiv);
+        scrollToBottom();
+    }
+
+    function updateFileProgress(id, current, total) {
+        const percent = Math.round((current / total) * 100);
+        const bar = document.getElementById('progBar_' + id);
+        const txt = document.getElementById('prog_' + id);
+        if(bar) bar.style.width = percent + '%';
+        if(txt) txt.innerText = percent + '%';
+    }
+
+    function scrollToBottom() {
+        const box = document.getElementById('messages');
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function renderContacts() {
+        const container = document.getElementById('contactsContainer');
+        container.innerHTML = '';
+        for (let id in contacts) {
+            const item = document.createElement('div');
+            item.className = 'contact-item';
+            item.innerHTML = `<div><b>${contacts[id]}</b><br><span>ID: ${id}</span></div> <button class="end-call-btn" style="position:static" onclick="deleteContact('${id}', event)">מחק</button>`;
+            item.onclick = () => { document.getElementById('txtPeerID').value = id; document.getElementById('txtPeerName').value = contacts[id]; };
+            container.appendChild(item);
+        }
+    }
+
+    window.deleteContact = function(id, event) {
+        event.stopPropagation();
+        delete contacts[id];
+        localStorage.setItem('p2p_contacts_gs', JSON.stringify(contacts));
+        renderContacts();
+    }
+
+    function safeBtoa(str) { return btoa(unescape(encodeURIComponent(str))); }
+    function safeAtob(str) { return decodeURIComponent(escape(atob(str))); }
+</script>
+</body>
+</html>
